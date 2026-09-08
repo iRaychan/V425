@@ -1,0 +1,1 @@
+-- Migration already applied to this Supabase project. Local history placeholder only.

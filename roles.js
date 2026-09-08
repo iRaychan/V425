@@ -38,6 +38,7 @@
     {key:'customer_assignment',label:'Customer assignment and distance',options:['none','full']},
     {key:'create_quotations',label:'Create quotations',options:['none','full']},
     {key:'view_quotations',label:'View quotations',options:['none','own','assigned','all']},
+    {key:'delete_quotation_history',label:'Delete quotation history',options:['none','full']},
     {key:'own_profile',label:'Own profile and password',options:['none','full']}
   ];
 
@@ -233,7 +234,7 @@
 
   function permissionValue(roleName,key){return String(currentPermissions()?.[roleName]?.[key]||window.KeySuitePermissions?.DEFAULTS?.[roleName]?.[key]||'none').toLowerCase()}
   function permissionCell(row,roleName){
-    const fixed=roleName==='owner'&&['key_dashboard','keyai_access','keyai_openai_control','keyai_sender_assign','manage_roles','customer_settings','use_quick_selection','use_selector','use_product','choose_brand_series','own_profile'].includes(row.key);
+    const fixed=roleName==='owner'&&['key_dashboard','keyai_access','keyai_openai_control','keyai_sender_assign','manage_roles','customer_settings','delete_quotation_history','use_quick_selection','use_selector','use_product','choose_brand_series','own_profile'].includes(row.key);
     const value=fixed?'full':permissionValue(roleName,row.key);
     if(permissionsEditing&&!fixed){
       const options=row.options.map(option=>`<option value="${option}"${value===option?' selected':''}>${LEVEL_LABELS[option]||title(option)}</option>`).join('');
@@ -272,7 +273,7 @@
     document.querySelectorAll('[data-permission-role][data-permission-key]').forEach(select=>{
       const r=select.dataset.permissionRole,k=select.dataset.permissionKey;matrix[r]=matrix[r]||{};matrix[r][k]=select.value;
     });
-    matrix.owner={...(matrix.owner||{}),key_dashboard:'full',keyai_access:'full',keyai_openai_control:'full',keyai_sender_assign:'full',manage_roles:'full',customer_settings:'full',use_quick_selection:'full',use_selector:'full',use_product:'full',choose_brand_series:'full',own_profile:'full'};
+    matrix.owner={...(matrix.owner||{}),key_dashboard:'full',keyai_access:'full',keyai_openai_control:'full',keyai_sender_assign:'full',manage_roles:'full',customer_settings:'full',delete_quotation_history:'full',use_quick_selection:'full',use_selector:'full',use_product:'full',choose_brand_series:'full',own_profile:'full'};
     return matrix;
   }
   async function savePermissions(){

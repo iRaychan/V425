@@ -292,6 +292,7 @@ function currentRole(){return String(currentAccess().role||'user').toLowerCase()
 function isCustomerAdmin(){return ['all','full'].includes(permissionLevel('edit_customers'))||hasPermission('customer_assignment')}
 function customerOwnerName(email){const e=String(email||'').toLowerCase();const user=(window.KEYSUITE_SECURE_DATA?.users||[]).find(x=>String(x.email||'').toLowerCase()===e);return user?.name||((e===currentEmail())?currentProfile().display_name:'')||email||'-'}
 function canManageQuotationHistory(){return ['all','full'].includes(permissionLevel('view_quotations'))}
+function canDeleteQuotationHistory(){return currentRole()==='owner'||permissionLevel('delete_quotation_history')==='full'}
 function quoteCreatorEmail(q={}){return String(q.createdByEmail||q.created_by_email||q.createdBy||q.preparedByEmail||'').trim().toLowerCase()}
 function quoteCreatorName(q={}){return String(q.createdByName||q.created_by_name||customerOwnerName(quoteCreatorEmail(q))||quoteCreatorEmail(q)||'-')}
 function parseQuoteJson(value){if(value&&typeof value==='object')return value;try{return JSON.parse(value||'{}')||{}}catch(_){return {}}}
@@ -381,16 +382,15 @@ async function deleteQuoteRemote(id,metadata={}){
  const seen=new Set();
  for(const target of targets){
   const logicalId=String(target?.id||id),remoteId=String(target?.remoteStorageId||logicalId);const key=`${logicalId}|${remoteId}`;if(seen.has(key))continue;seen.add(key);
-  let result=await client.rpc('keysuite_delete_quotation_v409',{p_company_id:companyId,p_logical_id:logicalId,p_legacy_id:remoteId});
-  if(result.error&&isMissingRpc(result.error,'keysuite_delete_quotation_v409'))result=await client.rpc('keysuite_delete_quotation_v236',{p_id:remoteId});
+  const result=await client.rpc('keysuite_delete_quotation_v42502',{p_company_id:companyId,p_logical_id:logicalId,p_legacy_id:remoteId,p_quotation_no:targetNo||canonicalQuotationNumber(target?.no)});
   if(result.error)throw result.error;
  }
  let refreshed=await listRemoteQuotes(client),remaining=(refreshed.data||[]).map(normalizeRemoteQuote);
  let survivors=remaining.filter(q=>String(q.id)===String(id)||(targetNo&&canonicalQuotationNumber(q.no)===targetNo));
  for(const target of survivors){
   const remoteId=String(target.remoteStorageId||'');if(!remoteId)continue;
-  const legacy=await client.rpc('keysuite_delete_quotation_v236',{p_id:remoteId});
-  if(legacy.error&&!isMissingRpc(legacy.error,'keysuite_delete_quotation_v236'))throw legacy.error;
+  const legacy=await client.rpc('keysuite_delete_quotation_v42502',{p_company_id:companyId,p_logical_id:String(target.id||id),p_legacy_id:remoteId,p_quotation_no:targetNo||canonicalQuotationNumber(target.no)});
+  if(legacy.error)throw legacy.error;
  }
  if(survivors.length){refreshed=await listRemoteQuotes(client);remaining=(refreshed.data||[]).map(normalizeRemoteQuote);survivors=remaining.filter(q=>String(q.id)===String(id)||(targetNo&&canonicalQuotationNumber(q.no)===targetNo))}
  if(survivors.length)throw new Error(`Quotation ${targetNo||id} is still present in secure history after delete.`);
@@ -398,7 +398,7 @@ async function deleteQuoteRemote(id,metadata={}){
 }
 async function cleanupRemoteQuotationDuplicates(client,rows=[]){
  const {duplicates}=dedupeQuotationRows(rows);if(!duplicates.length)return 0;let removed=0;
- for(const q of duplicates){const remoteId=q.remoteStorageId||q.id;if(!remoteId)continue;const result=await client.rpc('keysuite_delete_quotation_v236',{p_id:remoteId});if(result.error){console.warn('Duplicate quotation cleanup skipped',q.no,result.error);continue}removed++}
+ for(const q of duplicates){const remoteId=q.remoteStorageId||q.id;if(!remoteId)continue;const result=await client.rpc('keysuite_delete_quotation_v42502',{p_company_id:currentCompanyId(),p_logical_id:String(q.id||''),p_legacy_id:String(remoteId),p_quotation_no:canonicalQuotationNumber(q.no)});if(result.error){console.warn('Duplicate quotation cleanup skipped',q.no,result.error);continue}removed++}
  return removed
 }
 async function importLocalQuotes(client,remoteRows){
@@ -1249,7 +1249,7 @@ function loadQuote(id){
  window.KeySuiteTemplates?.loadSelection?.(q.quotationTemplateId||'',q.quotationTemplateSnapshot||null,(q.status||'')==='sealed');
  const items=q.items?.length?q.items:[{model:q.model||'',qty:q.qty||1,unitPrice:q.unitPrice||0,description:q.description||''}];setQuoteItems(items);showPage('quotation');setQuoteCustomerCollapsed(true);window.KeySuitePricing?.selectCustomer?.(quotationPricingCustomerId,false);syncStartCustomer(quotationPricingCustomerId);updateQuotationStateUi()
 }
-function deleteQuote(id){if(!confirm('Delete this quotation?'))return;const target=quotes().find(x=>String(x.id)===String(id)),targetNo=canonicalQuotationNumber(target?.no);purgeDeletedQuoteCaches(id,targetNo);deleteQuoteRemote(id,{quote:target,no:targetNo}).catch(error=>{console.error(error);alert(`Quotation could not be deleted from secure history: ${error.message||error}`);loadSecureQuotes()});refreshAll()}
+function deleteQuote(id){if(!canDeleteQuotationHistory()){alert('Your role is not allowed to delete quotation history.');return}if(!confirm('Delete this quotation?'))return;const target=quotes().find(x=>String(x.id)===String(id)),targetNo=canonicalQuotationNumber(target?.no);purgeDeletedQuoteCaches(id,targetNo);deleteQuoteRemote(id,{quote:target,no:targetNo}).catch(error=>{console.error(error);alert(`Quotation could not be deleted from secure history: ${error.message||error}`);loadSecureQuotes()});refreshAll()}
 function newQuote(){
  quotationSessionId=newUuid();window.KeySuiteAssembly?.resetForNewQuotation?.();window.KeySuiteTemplates?.resetSelection?.();
  editingQuoteId=null;quotationStatus='new';quotationRevisionOf='';quotationRevisionRootId='';quotationRevisionNumber=0;quotationAudit=[];quotationPricingCustomerId='';quotationPricingCustomerSnapshot=null;
@@ -1260,8 +1260,8 @@ function newQuote(){
 }
 function quoteDisplayCustomerName(q){return q.printedCompany||q.customerName||q.customer_name||q.company||customerName(q.customerId)||q.pricingCustomerSnapshot?.company||customerName(q.pricingCustomerId)||''}
 function refreshQuotes(){
- const all=quotes();populateQuotationHistoryFilters(all);const arr=filteredQuotes(all).slice().sort(compareQuotationHistoryNewest),showUser=canManageQuotationHistory(),userHead=$('historyUserHead');if(userHead)userHead.style.display=showUser?'table-cell':'none';
- $('quoteRows').innerHTML=arr.map(q=>{const itemCount=q.items?.length||1,userCell=showUser?`<td>${esc(quoteCreatorName(q))}</td>`:'',sealed=String(q.status||'').toLowerCase()==='sealed',pdf=sealed?`<button class="btn quotation-history-pdf" data-pdf-q="${q.id}" title="PDF — sealed quotation">PDF</button>`:'';return `<tr><td>${esc(q.no)}</td><td>${esc(q.date)}</td><td>${esc(q.documentType||'Quotation')}</td><td>${esc(quoteDisplayCustomerName(q))}</td>${userCell}<td>${itemCount}</td><td>${money(q.total)}</td><td><div class="quotation-history-actions"><span class="quotation-history-pdf-slot">${pdf}</span><button class="btn secondary" data-open-q="${q.id}">Open</button><button class="btn danger" data-del-q="${q.id}">Delete</button></div></td></tr>`}).join('')||`<tr><td colspan="${showUser?8:7}" class="muted">No quotations match the selected filters.</td></tr>`;
+ const all=quotes();populateQuotationHistoryFilters(all);const arr=filteredQuotes(all).slice().sort(compareQuotationHistoryNewest),showUser=canManageQuotationHistory(),canDelete=canDeleteQuotationHistory(),userHead=$('historyUserHead');if(userHead)userHead.style.display=showUser?'table-cell':'none';
+ $('quoteRows').innerHTML=arr.map(q=>{const itemCount=q.items?.length||1,userCell=showUser?`<td>${esc(quoteCreatorName(q))}</td>`:'',sealed=String(q.status||'').toLowerCase()==='sealed',pdf=sealed?`<button class="btn quotation-history-pdf" data-pdf-q="${q.id}" title="PDF — sealed quotation">PDF</button>`:'',del=canDelete?`<button class="btn danger" data-del-q="${q.id}">Delete</button>`:'';return `<tr><td>${esc(q.no)}</td><td>${esc(q.date)}</td><td>${esc(q.documentType||'Quotation')}</td><td>${esc(quoteDisplayCustomerName(q))}</td>${userCell}<td>${itemCount}</td><td>${money(q.total)}</td><td><div class="quotation-history-actions"><span class="quotation-history-pdf-slot">${pdf}</span><button class="btn secondary" data-open-q="${q.id}">Open</button>${del}</div></td></tr>`}).join('')||`<tr><td colspan="${showUser?8:7}" class="muted">No quotations match the selected filters.</td></tr>`;
  document.querySelectorAll('[data-open-q]').forEach(b=>b.onclick=()=>loadQuote(b.dataset.openQ));document.querySelectorAll('[data-pdf-q]').forEach(b=>b.onclick=()=>openHistoryQuotationPdf(b.dataset.pdfQ));document.querySelectorAll('[data-del-q]').forEach(b=>b.onclick=()=>deleteQuote(b.dataset.delQ));
  $('recentQuotes').innerHTML=all.slice().sort(compareQuotationHistoryNewest).slice(0,5).map(q=>{const first=q.items?.[0]?.model||q.model||'';return `<tr><td>${esc(q.no)}</td><td>${esc(quoteDisplayCustomerName(q))}</td><td>${esc(first)}</td><td>${money(q.total)}</td><td>${esc(q.documentType||'Quotation')}</td></tr>`}).join('')||'<tr><td colspan="5" class="muted">No quotations yet.</td></tr>';
  if($('mCustomers'))$('mCustomers').textContent=customers().length;if($('mQuotes'))$('mQuotes').textContent=all.length;if($('mValue'))$('mValue').textContent=money(all.reduce((sum,q)=>sum+q.total,0));if($('mPending'))$('mPending').textContent=all.length;renderQuotationHistoryNotice();

@@ -1,11 +1,15 @@
-# KeySuite V4.25.01 FULL CLEAN
+# KeySuite V4.25.02 FULL CLEAN
 
-Complete KeySuite release tree built from the supplied V4.23.20 Full Clean baseline and continued as V4.25.01.
+Complete KeySuite release tree continued from the verified V4.25.01 Full Clean baseline.
 
-## V4.25.01
-- Fixed BFI USD/RMB multiplier save so Supabase no longer rejects the update for a missing WHERE clause.
-- BFI Currency & Multipliers now uses the same 3-second hold-to-unlock, Save and Cancel protection as the main Price List editors.
-- BFI 1 Phase and 3 Phase source-price inputs now visibly show the selected MYR / USD / RMB currency beside the value.
-- Fixed Quotation History delete persistence: the real Supabase storage-row ID is preserved, local quotation caches are purged, duplicate storage rows for the same quotation are removed, and deletion is verified before the refreshed history is cached.
+## V4.25.02
+- CHC G1 and CHC G2 now maintain independent Price List currency settings and independent USD/RMB multipliers.
+- Existing shared CHC multiplier values are copied into both generations on migration so current pricing is preserved; after migration, G1 and G2 can be maintained separately.
+- CHC quotation/pricing lookup uses the multiplier belonging to the selected CHC generation. The legacy CHC multiplier remains a G2 compatibility alias for older clients.
+- Both CHC G1 and CHC G2 Currency & Multiplier controls retain the 3-second hold-to-unlock, Save and Cancel protection.
+- Added Role Authority: `Delete quotation history`. Owner defaults to Full; other roles default to None and can be assigned Full by Role Authority.
+- Quotation History Delete is enforced in the UI and by the V4.25.02 Supabase RPC for the signed-in company/role.
+- Retains all V4.25.01 BFI multiplier/currency and persistent quotation-delete corrections.
+- Includes local migration-history placeholders for the four already-applied remote migration versions encountered during V4.25.01 deployment.
 
-See `README_UPGRADE_V42501.md` for deployment details.
+See `README_UPGRADE_V42502.md` for deployment details.

@@ -4,7 +4,7 @@
   if (window.__KEYSUITE_V394410_MULTIBRAND__) return;
   window.__KEYSUITE_V394410_MULTIBRAND__=true;
 
-  const VERSION='4.22.04';
+  const VERSION='4.25.02';
   const $=id=>document.getElementById(id);
   const clone=v=>JSON.parse(JSON.stringify(v??{}));
   const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -469,7 +469,8 @@
     renderEffectiveRates();decorateProductRates();
   }
   function decorateProductRates(){
-    const map={CHC:['chcUsdMultiplier','chcRmbMultiplier'],ES:['esUsdMultiplier','esRmbMultiplier'],GWS:['gwsUsdMultiplier','gwsRmbMultiplier'],KEYPLC:['keyplcUsdMultiplier','keyplcRmbMultiplier'],MANIFOLD:['manifoldUsdMultiplier','manifoldRmbMultiplier'],MOTOR:['motorUsdMultiplier','motorRmbMultiplier'],COUPLING:['couplingUsdMultiplier','couplingRmbMultiplier']};
+    const chcFamily=String($('chcPriceGeneration')?.value||'G2').toUpperCase()==='G1'?'CHC_G1':'CHC_G2';
+    const map={[chcFamily]:['chcUsdMultiplier','chcRmbMultiplier'],ES:['esUsdMultiplier','esRmbMultiplier'],GWS:['gwsUsdMultiplier','gwsRmbMultiplier'],KEYPLC:['keyplcUsdMultiplier','keyplcRmbMultiplier'],MANIFOLD:['manifoldUsdMultiplier','manifoldRmbMultiplier'],MOTOR:['motorUsdMultiplier','motorRmbMultiplier'],COUPLING:['couplingUsdMultiplier','couplingRmbMultiplier']};
     Object.entries(map).forEach(([fam,ids])=>ids.forEach((id,i)=>{const input=$(id);if(!input)return;let note=$(`v391Effective_${id}`);if(!note){note=document.createElement('div');note.id=`v391Effective_${id}`;note.className='v391-effective-note';input.closest('div')?.appendChild(note);}const cur=i?'RMB':'USD',base=num(state.baseMultipliers?.[fam]?.[cur],num(input.value)),eff=effectiveRate(base,cur);note.innerHTML=`Base ${base.toFixed(cur==='USD'?2:3)} → <b>Effective ${eff.toFixed(1)}</b>`;}));
   }
 
@@ -532,7 +533,7 @@
     renderEffectiveRates();renderDefaultMargins(editable);
   }
   function renderEffectiveRates(){
-    const body=$('v391EffectiveRates');if(!body)return;const labels={CHC:'CHC',ES:'ES',GWS:'GWS',KEYPLC:'KeyPLC',MANIFOLD:'Manifold',MOTOR:'Motor',COUPLING:'Coupling'};
+    const body=$('v391EffectiveRates');if(!body)return;const labels={CHC_G1:'CHC G1',CHC_G2:'CHC G2',ES:'ES',GWS:'GWS',KEYPLC:'KeyPLC',MANIFOLD:'Manifold',MOTOR:'Motor',COUPLING:'Coupling'};
     body.innerHTML=Object.keys(labels).map(f=>{const r=state.baseMultipliers?.[f]||{};return `<tr><td><b>${labels[f]}</b></td><td>${num(r.USD).toFixed(2)}</td><td><b>${effectiveRate(r.USD,'USD').toFixed(1)}</b></td><td>${num(r.RMB).toFixed(3)}</td><td><b>${effectiveRate(r.RMB,'RMB').toFixed(1)}</b></td></tr>`}).join('');
   }
   function renderDefaultMargins(editable=state.generalEditing){
@@ -1146,6 +1147,7 @@
   window.addEventListener('KEYSUITE_AUTH_CONTEXT_READY',()=>{setTimeout(()=>repairBrandUi({reload:true}),0);setTimeout(()=>repairBrandUi(),500)});
   window.addEventListener('KEYSUITE_V41223_BRAND_RECOVERY',()=>setTimeout(()=>repairBrandUi({reload:!state.coreReady}),0));
   window.addEventListener('pageshow',()=>setTimeout(()=>repairBrandUi(),100));
+  window.addEventListener('keysuite-chc-price-generation-changed',()=>{decorateProductRates();renderEffectiveRates();});
 
   async function init(){
     if(state.initialized)return;state.initialized=true;injectStyle();addPages();addDashboardCards();hideOldFuel();markVersion();renderProductTree();renderSelectorTree();
