@@ -189,7 +189,7 @@ body.product-frame main{display:block;max-width:none;padding:8px}body.product-fr
 @media(max-width:600px){.brand-wrap{flex-wrap:wrap}.keysuite-header-actions{width:100%;margin-left:0;justify-content:flex-end}.keysuite-add-action{min-width:92px;padding:9px 11px;font-size:12px}.mobile-export-btn{display:none!important}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:600px){.brand-wrap{flex-wrap:nowrap!important}.keysuite-header-actions{width:auto!important;margin-left:auto!important}}
 </style>
-<script src="../pdf-optimization.js?v=42507"></script>
+<script src="../pdf-optimization.js?v=42508"></script>
 </head>
 <body>
 <header>
@@ -468,6 +468,31 @@ function graph(fit,axis,ylabel,dq,dv,labelOrder,chartTitle,metricLabel='',chartH
 }
 
 
+
+// V4.25.08: display-only shut-off power extension. Preserve the existing fitted power curve
+// from its first usable flow onward, and extend that local trend smoothly back to Q=0.
+// Do not force the Q=0 power to 0 kW/HP and do not change selection or motor sizing data.
+function keysuitePowerFitValue(fit,x){
+ if(!fit||!Number.isFinite(Number(x)))return NaN;
+ try{if(typeof fitValue==='function')return fitValue(fit,Number(x));}catch(_){ }
+ const c=fit.c||[];return c.reduce((s,a,i)=>s+Number(a)*Number(x)**i,0);
+}
+function keysuitePowerExtension(fit){
+ const xs=[];(fit&&fit.pts||[]).forEach(p=>{const x=Number(p&&p.x);if(Number.isFinite(x)&&x>1e-9&&!xs.some(v=>Math.abs(v-x)<1e-9))xs.push(x)});xs.sort((a,b)=>a-b);
+ if(xs.length<2)return null;
+ const x1=xs[0],x2=xs[1],y1=keysuitePowerFitValue(fit,x1),y2=keysuitePowerFitValue(fit,x2);
+ if(!(x1>0&&x2>x1&&Number.isFinite(y1)&&y1>0&&Number.isFinite(y2)))return null;
+ const slope=(y2-y1)/(x2-x1);let y0=y1-slope*x1;
+ const minY=Math.max(y1*.15,1e-6),maxY=Math.max(y1*1.75,minY);
+ if(!Number.isFinite(y0))y0=y1;
+ y0=Math.max(minY,Math.min(maxY,y0));
+ return {joinX:x1,joinY:y1,y0};
+}
+function keysuitePowerGraphValue(fit,x,ext){
+ x=Number(x);if(ext&&Number.isFinite(x)&&x>=0&&x<ext.joinX)return ext.y0+(ext.joinY-ext.y0)*(x/ext.joinX);
+ return keysuitePowerFitValue(fit,x);
+}
+
 function keychcParallelCounts(){
  const counts=[];
  for(let n=2;n<=6;n++){const el=document.getElementById(`parallel${n}`);if(el&&el.checked)counts.push(n);}
@@ -482,10 +507,12 @@ function keychcParallelMetricGraph(fit,kind,dutyQ,dutyValue,chartHeight=216,powe
  const counts=keychcParallelCounts(),drawCounts=[1,...counts];
  const W=700,H=chartHeight,p={l:72,r:28,t:18,b:46};
  const powerScale=kind==='power'&&String(powerUnit||'kW').toUpperCase()==='HP'?(1/0.746):1;
+ const powerExt=kind==='power'?keysuitePowerExtension(fit):null;
  const maxCount=Math.max(1,...counts);
  const xMax=Math.max(0.1,(Number(fit.max)||0)*maxCount);
  const xa=sharedXAxis||nice(xMax,5);
  let baseMax=Math.max(...fit.pts.map(pt=>(Number(pt.y)||0)*powerScale),(Number(dutyValue)||0)*powerScale);
+ if(kind==='power'&&powerExt)baseMax=Math.max(baseMax,powerExt.y0*powerScale);
  if(kind==='power')baseMax*=maxCount;
  const axis=kind==='efficiency'?effAxis(baseMax):nice(Math.max(0.1,baseMax),5);
  const plotW=W-p.l-p.r,plotH=H-p.t-p.b;
@@ -496,8 +523,9 @@ function keychcParallelMetricGraph(fit,kind,dutyQ,dutyValue,chartHeight=216,powe
  for(const n of drawCounts){
   const pts=[];
   for(let i=0;i<=180;i++){
-   const qEach=fit.min+(fit.max-fit.min)*i/180;
-   let v=peval(fit.c,qEach);if(!Number.isFinite(v))continue;
+   const curveMin=(kind==='power'&&powerExt)?0:fit.min;
+   const qEach=curveMin+(fit.max-curveMin)*i/180;
+   let v=kind==='power'?keysuitePowerGraphValue(fit,qEach,powerExt):peval(fit.c,qEach);if(!Number.isFinite(v))continue;
    if(kind==='power')v*=n*powerScale;
    v=Math.max(0,Math.min(axis.max,v));
    pts.push(`${X(qEach*n)},${Y(v)}`);
@@ -1264,7 +1292,7 @@ function exportPDF(requestedFilename){
   </div>
   </div>
  </section>
- <script src="../pdf-optimization.js?v=42507"><\/script>
+ <script src="../pdf-optimization.js?v=42508"><\/script>
  <script>
 const __KEYSUITE_LOCKED_PDF_TITLE__=${JSON.stringify(pdfFileTitle)};
 function __keysuiteLockPdfTitle(){try{document.title=__KEYSUITE_LOCKED_PDF_TITLE__;window.__KEYSUITE_PDF_FILE_TITLE__=__KEYSUITE_LOCKED_PDF_TITLE__;if(window.frameElement){window.frameElement.name=__KEYSUITE_LOCKED_PDF_TITLE__;window.frameElement.title=__KEYSUITE_LOCKED_PDF_TITLE__;}}catch(_){}}
