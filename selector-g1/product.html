@@ -190,7 +190,7 @@ body.product-frame main{display:block;max-width:none;padding:8px}body.product-fr
 @media(max-width:600px){.brand-wrap{flex-wrap:wrap}.keysuite-header-actions{width:100%;margin-left:0;justify-content:flex-end}.keysuite-add-action{min-width:92px;padding:9px 11px;font-size:12px}.mobile-export-btn{display:none!important}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:600px){.brand-wrap{flex-wrap:nowrap!important}.keysuite-header-actions{width:auto!important;margin-left:auto!important}}
 </style>
-<script src="../pdf-optimization.js?v=42508"></script>
+<script src="../pdf-optimization.js?v=42510"></script>
 </head>
 <body>
 <header>
@@ -1100,12 +1100,18 @@ function keysuiteChcApplyBrandingToReport(html){
 function exportPDF(requestedFilename){
  const best=keychcCurrentDisplayModel();
  if(!best)return;
- const displayModel=keysuiteChcPresentationAlias(best._keysuiteDisplayModel||best.model);
+ let pdfPayload={};try{pdfPayload=window.__KEYSUITE_CURRENT_SELECTION?.()||{}}catch(_){}
+ const computedDisplayModel=keysuiteChcPresentationAlias(best._keysuiteDisplayModel||best.model);
+ const displayModel=String(
+   pdfPayload.keysuite_display_model||pdfPayload.display_model||pdfPayload.quotation_model||
+   window.keysuiteExportPayload?.keysuite_display_model||window.keysuiteExportPayload?.display_model||window.keysuiteExportPayload?.quotation_model||
+   window.__KEYSUITE_PDF_PRESENTATION_SNAPSHOT?.displayModel||computedDisplayModel||best.model||'Pump Model'
+ ).trim();
  let resolvedFilename=requestedFilename;
- if(!resolvedFilename&&window.parent&&window.parent!==window){try{const api=window.parent.KeySuitePumpPdfNames,payload=window.__KEYSUITE_CURRENT_SELECTION?.();if(api&&typeof api.nextFromPayload==='function'&&payload)resolvedFilename=api.nextFromPayload(payload)}catch(_){}}
+ if(!resolvedFilename&&window.parent&&window.parent!==window){try{const api=window.parent.KeySuitePumpPdfNames,payload=pdfPayload;if(api&&typeof api.nextFromPayload==='function'&&payload)resolvedFilename=api.nextFromPayload(payload)}catch(_){}}
  const pdfFileTitleRaw=String(resolvedFilename||displayModel||'Pump Model').trim();
  const pdfFileTitle=/\.pdf$/i.test(pdfFileTitleRaw)?pdfFileTitleRaw:(pdfFileTitleRaw+'.pdf');
- window.__KEYSUITE_PDF_FILE_TITLE__=pdfFileTitle;try{window.__KEYSUITE_PDF_PRESENTATION_SNAPSHOT={...(window.__KEYSUITE_PDF_PRESENTATION_SNAPSHOT||{}),pdfFileTitle};}catch(_){}
+ window.__KEYSUITE_PDF_FILE_TITLE__=pdfFileTitle;try{window.__KEYSUITE_PDF_PRESENTATION_SNAPSHOT={...(window.__KEYSUITE_PDF_PRESENTATION_SNAPSHOT||{}),displayModel,pdfFileTitle};}catch(_){}
  const {q,h}=selectionState;
  const hz=keychcCurveHz(),pumpQ=q;
  const maxH=Math.max(...best.headFit.pts.map(p=>p.y),h,Number(best.predHead)||0);
@@ -1314,7 +1320,7 @@ function exportPDF(requestedFilename){
   </div>
   </div>
  </section>
- <script src="../pdf-optimization.js?v=42508"><\/script>
+ <script src="../pdf-optimization.js?v=42510"><\/script>
  <script>
 const __KEYSUITE_LOCKED_PDF_TITLE__=${JSON.stringify(pdfFileTitle)};
 function __keysuiteLockPdfTitle(){try{document.title=__KEYSUITE_LOCKED_PDF_TITLE__;window.__KEYSUITE_PDF_FILE_TITLE__=__KEYSUITE_LOCKED_PDF_TITLE__;if(window.frameElement){window.frameElement.name=__KEYSUITE_LOCKED_PDF_TITLE__;window.frameElement.title=__KEYSUITE_LOCKED_PDF_TITLE__;}}catch(_){}}

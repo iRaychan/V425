@@ -1,15 +1,18 @@
-# KeySuite V4.25.09 FULL CLEAN
+# KeySuite V4.25.10 FULL CLEAN
 
-Full clean release built from the verified V4.25.08 baseline.
+Built from the verified V4.25.09 Full Clean baseline.
 
-## V4.25.09
+## V4.25.10
 
-- Corrects duplicated Enhanced model suffixes across CHC C4/G1, CHC C6/G2 and BFI.
-- CHC Enhanced names always resolve to one final `E` only, for example `CHC 10-30E`.
-- BFI names are normalized before phase / Enhanced suffixing: `BFI 10-3` (1Ph), `BFI 10-3T` (standard 3Ph), `BFI 10-3E` (Enhanced 3Ph).
-- The same normalized identity is used for selector, PDF, Quick Selection, quotation, assembly and pricing lookup paths.
-- Hydraulic, Enhanced-curve and pricing calculations are otherwise unchanged.
+- PDF model identity is now frozen from the selector's final `display_model` before PDF rendering.
+- PDF Page 1, Page 2 and Page 3 use the exact final customer-facing model name and do not append `T` or `E` again.
+- BFI standard 3-phase names remain single-suffix, for example `BFI 10-3T`.
+- BFI Enhanced names remain single-suffix, for example `BFI 20-3E`.
+- CHC visible model names are preserved exactly in PDF, including models whose final display identity already ends in `T` or `E`.
+- PDF filename fallback also uses the frozen final display model.
+- Product-curve PDF routes use the same frozen model identity.
+- Existing hydraulics, pricing, Enhanced calculations, duty settings and PDF layout are unchanged.
 
-**No new Supabase migration or Edge Function deployment is required for V4.25.09.**
+**No new Supabase migration or Edge Function deployment is required for V4.25.10.**
 
-See `README_UPGRADE_V42509.md` for upgrade-patch details.
+See `README_UPGRADE_V42510.md` for upgrade-patch details.
