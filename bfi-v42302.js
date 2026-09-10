@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id),DB=()=>window.KeySuiteBFIProductData||{m
 let data=null,access=null,selectedSeries='ALL',brandContext={name:'B.G.Reich',brandSeries:'BFI',sellingSeries:'BFI'};
 function rows(){return (data?.bfiProducts?.length?data.bfiProducts:DB().models||[]).slice()}
 function brandName(){return brandContext.name||'B.G.Reich'}
-function baseModelName(model){return String(model||'').trim().replace(/[TE]$/i,'')}
+function baseModelName(model){return String(model||'').trim().replace(/[TE]+$/i,'').trim()}
 function motorEffForPhase(phase){return String(phase||'3Ph')==='1Ph'?'IE1':'IE2'}
 function displayModel(model,phase=''){const phased=String(phase||'')==='3Ph'?baseModelName(model)+'T':baseModelName(model),selling=String(brandContext.sellingSeries||brandContext.brandSeries||'BFI').trim();return selling&&selling.toUpperCase()!=='BFI'?phased.replace(/^BFI\b/i,selling):phased}
 function phaseFor(product,requested='3Ph'){const phases=product?.phases||['1Ph','3Ph'];return phases.includes(requested)?requested:(phases.includes('3Ph')?'3Ph':phases[0])}

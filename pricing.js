@@ -291,8 +291,8 @@
 
 
   function normalizeBfiPriceIdentity(model,phase=''){
-    const raw=String(model||'').trim(),suffix=/E$/i.test(raw)?'E':(/T$/i.test(raw)?'T':'');
-    const base=suffix?raw.slice(0,-1).trim():raw;
+    const raw=String(model||'').trim(),tail=(raw.match(/[TE]+$/i)||[''])[0],suffix=/E/i.test(tail)?'E':(/T/i.test(tail)?'T':'');
+    const base=tail?raw.slice(0,-tail.length).trim():raw;
     const requested=suffix==='E'||suffix==='T'?'3Ph':(String(phase||'').trim()||'3Ph');
     return {raw,base,suffix,phase:requested==='1Ph'?'1Ph':'3Ph'};
   }

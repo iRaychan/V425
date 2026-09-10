@@ -133,7 +133,7 @@ function customerPriceScope(){
 }
 const selectedEntries=()=>customerPriceScope().entries.filter(e=>state.savedKeys.has(e.key));
 function aliasModel(model,e){const raw=norm(model),series=seriesFor(e.brand,e.family,e.productGroup);if(!raw)return raw;if(e.family==='CHC')return raw.replace(/^(?:CHCS|CHCN|CHC)\b/i,series);if(e.family==='ES'&&!isMaster(e.brand)&&series!=='ES')return raw.replace(/^ES\b/i,series);return raw}
-function enhancedAliasModel(model,e,enhanced){const shown=aliasModel(model,e);return enhanced&&shown&&!/E$/i.test(shown)?shown+'E':shown}
+function enhancedAliasModel(model,e,enhanced){const shown=aliasModel(model,e),family=upper(e?.family);if(family==='BFI'){const base=shown.replace(/[TE]+$/i,'').trim();return enhanced&&base?base+'E':base}if(family==='CHC'){const base=shown.replace(/E+$/i,'').trim();return enhanced&&base?base+'E':base}return shown}
 const n=v=>{const x=Number(v);return Number.isFinite(x)?x:null};
 const kw=v=>{const x=n(v);if(x==null)return '—';const d=x>=10?1:2;return `${Number(x.toFixed(d))}kW`};
 const pole=v=>{let x=n(v);if(x==null)return '—';x=Math.round(x);return `${x}Pole`};

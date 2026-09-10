@@ -184,7 +184,7 @@ body.product-frame main{display:block;max-width:none;padding:8px}body.product-fr
 @media(max-width:600px){.brand-wrap{flex-wrap:wrap}.keysuite-header-actions{width:100%;margin-left:0;justify-content:flex-end}.keysuite-add-action{min-width:92px;padding:9px 11px;font-size:12px}.mobile-export-btn{display:none!important}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:600px){.brand-wrap{flex-wrap:nowrap!important}.keysuite-header-actions{width:auto!important;margin-left:auto!important}}
 </style>
-<script src="../pdf-optimization.js?v=42508"></script>
+<script src="../pdf-optimization.js?v=42509"></script>
 </head>
 <body>
 <header>
@@ -312,7 +312,7 @@ body.product-frame main{display:block;max-width:none;padding:8px}body.product-fr
 </div>
 </main>
 <script src="../supabase/functions/shared-bfi/bfi-data.js?v=42314"></script>
-<script src="../supabase/functions/shared-bfi/bfi-selector-core.js?v=42508"></script>
+<script src="../supabase/functions/shared-bfi/bfi-selector-core.js?v=42509"></script>
 <script>
 const DB=globalThis.KeySuiteBFIData;if(!DB)throw new Error('KeySuite canonical BFI data failed to load.');
 const KEYSUITE_BFI_CORE=globalThis.KeySuiteBFICore;if(!KEYSUITE_BFI_CORE)throw new Error('KeySuite canonical BFI selector core failed to load.');
@@ -323,7 +323,7 @@ const MOTOR_DB={"IE":[{"hp":0.25,"model":"BM0.25-2","rpm":2720,"amp3":0.48,"amp1
 function motorValue(v,suffix=""){if(v===null||v===undefined||v===""||v==="-")return "-";return `${Number(v).toFixed(Number(v)%1===0?0:2).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1")}${suffix}`;}
 function keysuiteBfiMotorEffForPhase(phase){return String(phase||'3Ph')==='1Ph'?'IE1':'IE2'}
 function keysuiteBfiMotorDbClass(effClass){return String(effClass||'').toUpperCase()==='IE1'?'IE':String(effClass||'IE2').toUpperCase()}
-function keybfiBaseModelName(model){return String(model||'').trim().replace(/[TE]$/i,'')}
+function keybfiBaseModelName(model){return String(model||'').trim().replace(/[TE]+$/i,'').trim()}
 function keybfiEnhancedAllowed(phase){return String(phase||selectionState?.motorPhase||motorPhase?.value||'3Ph')==='3Ph'}
 function keybfiPhaseModelName(model,phase,enhanced=false){const raw=keybfiBaseModelName(model),ph=String(phase||selectionState?.motorPhase||'3Ph');if(ph==='3Ph'&&enhanced)return raw+'E';return ph==='3Ph'?raw+'T':raw}
 function findMotorData(hp,effClass,phase,voltage,hz){
@@ -672,7 +672,7 @@ function fitMixedEfficiencyCurve(curve,mix,r){
 const KEYSUITE_ENHANCED_MAX_HZ=60;
 const KEYSUITE_ENHANCED_MAX_RATIO=KEYSUITE_ENHANCED_MAX_HZ/DB.base_hz;
 const KEYSUITE_ENHANCED_MAX_RPM=3480;
-function keychcEnhancedModelName(model){const raw=String(model||'').trim();return raw&& !/E$/i.test(raw)?raw+'E':raw;}
+function keychcEnhancedModelName(model){const base=keybfiBaseModelName(model);return base?base+'E':base;}
 
 function keysuiteBfiPresentationContext(){
  let fresh={},pinned={},locked={};
@@ -1252,7 +1252,7 @@ function exportPDF(requestedFilename){
   </div>
   </div>
  </section>
- <script src="../pdf-optimization.js?v=42508"><\/script>
+ <script src="../pdf-optimization.js?v=42509"><\/script>
  <script>
 const __KEYSUITE_LOCKED_PDF_TITLE__=${JSON.stringify(pdfFileTitle)};
 function __keysuiteLockPdfTitle(){try{document.title=__KEYSUITE_LOCKED_PDF_TITLE__;}catch(_){}}

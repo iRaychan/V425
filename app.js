@@ -1339,7 +1339,8 @@ function chcSealDescription(seal='Car/Cer',elastomer='Viton'){
  const faces=chcSealFacesDisplay(seal),e=String(elastomer||'Viton').trim()||'Viton';
  return faces==='Ca SiC'&&/^viton$/i.test(e)?'Mechanical Seal':`Mechanical Seal - ${faces} ${e}`;
 }
-function chcEnhancedDisplayModel(model,enhanced=false){const raw=String(model||'').trim();return enhanced&&raw&&!/E$/i.test(raw)?raw+'E':raw}
+function chcBaseModelName(model){return String(model||'').trim().replace(/E+$/i,'').trim()}
+function chcEnhancedDisplayModel(model,enhanced=false){const base=chcBaseModelName(model);return enhanced&&base?base+'E':base}
 function chcMaterialModel(model,material){const raw=String(model||'');return material==='SS304'?raw.replace(/^CHC\b/i,'CHCS'):material==='SS316'?raw.replace(/^CHC\b/i,'CHCN'):raw}
 function chcAssemblyQuoteItem(p={}){
  const material=p.keysuite_material||$('pumpMaterial')?.value||'SS304 (Cast Iron Connection)';
@@ -1347,8 +1348,8 @@ function chcAssemblyQuoteItem(p={}){
  const elastomer=p.keysuite_elastomer||$('sealElastomer')?.value||'Viton';
  const bare=selectionBareMode(p,$('bareShaft')?.checked);
  const enhanced=!!(p.enhanced||p.enhanced_curve);
- const rawModel=String(p.base_model||p.model||p.quotation_model||'CHC Pumpset');
- const rawDisplayModel=String(p.display_model||chcEnhancedDisplayModel(rawModel,enhanced));
+ const rawModel=chcBaseModelName(p.base_model||p.model||p.quotation_model||'CHC Pumpset');
+ const rawDisplayModel=chcEnhancedDisplayModel(p.display_model||rawModel,enhanced);
  const quotationModel=chcMaterialModel(rawModel,material),displayQuotationModel=chcMaterialModel(rawDisplayModel,material);
  const rawConnection=String(p.connection||'');
  const dnMatch=rawConnection.match(/DN\s*\d+/ig)||[];
@@ -1475,8 +1476,8 @@ window.addEventListener('message',function(event){
  const elastomer=p.keysuite_elastomer||$('sealElastomer').value;
  const bare=selectionBareMode(p,$('bareShaft')?.checked);
  const enhanced=!!(p.enhanced||p.enhanced_curve);
- const rawModel=String(p.base_model||p.model||'');
- const rawDisplayModel=String(p.display_model||chcEnhancedDisplayModel(rawModel,enhanced));
+ const rawModel=chcBaseModelName(p.base_model||p.model||'');
+ const rawDisplayModel=chcEnhancedDisplayModel(p.display_model||rawModel,enhanced);
  updateConnectionAvailabilityFromSelection(p);
  const seriesSize=Number((rawModel.match(/CHC\s+(\d+)/i)||[])[1]||0);
  const connectionSelect=$('connectionType');

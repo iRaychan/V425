@@ -184,7 +184,7 @@ body.product-frame main{display:block;max-width:none;padding:8px}body.product-fr
 @media(max-width:600px){.brand-wrap{flex-wrap:wrap}.keysuite-header-actions{width:100%;margin-left:0;justify-content:flex-end}.keysuite-add-action{min-width:92px;padding:9px 11px;font-size:12px}.mobile-export-btn{display:none!important}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:600px){.brand-wrap{flex-wrap:nowrap!important}.keysuite-header-actions{width:auto!important;margin-left:auto!important}}
 </style>
-<script src="../pdf-optimization.js?v=42508"></script>
+<script src="../pdf-optimization.js?v=42509"></script>
 </head>
 <body>
 <header>
@@ -312,7 +312,7 @@ body.product-frame main{display:block;max-width:none;padding:8px}body.product-fr
 </div>
 </main>
 <script src="../supabase/functions/shared-chc/chc-data.js?v=41212"></script>
-<script src="../supabase/functions/shared-chc/chc-selector-core.js?v=42508"></script>
+<script src="../supabase/functions/shared-chc/chc-selector-core.js?v=42509"></script>
 <script>
 const DB=globalThis.KeySuiteCHCData;if(!DB)throw new Error('KeySuite canonical CHC data failed to load.');
 const KEYSUITE_CHC_CORE=globalThis.KeySuiteCHCCore;if(!KEYSUITE_CHC_CORE)throw new Error('KeySuite canonical CHC selector core failed to load.');
@@ -658,7 +658,8 @@ function fitMixedEfficiencyCurve(curve,mix,r){
 const KEYSUITE_ENHANCED_MAX_HZ=60;
 const KEYSUITE_ENHANCED_MAX_RATIO=KEYSUITE_ENHANCED_MAX_HZ/DB.base_hz;
 const KEYSUITE_ENHANCED_MAX_RPM=3480;
-function keychcEnhancedModelName(model){const raw=String(model||'').trim();return raw&& !/E$/i.test(raw)?raw+'E':raw;}
+function keychcBaseModelName(model){return String(model||'').trim().replace(/E+$/i,'').trim()}
+function keychcEnhancedModelName(model){const base=keychcBaseModelName(model);return base?base+'E':base;}
 
 function keysuiteChcPresentationContext(){
  let fresh={},pinned={},locked={};
@@ -694,7 +695,7 @@ function keysuiteChcApplyBrandingToReport(html){
  }
  return out;
 }
-function keychcVisibleModelName(model,enhanced=!!selectionState?.enhanced){return keysuiteChcPresentationAlias(enhanced?keychcEnhancedModelName(model):String(model||''));}
+function keychcVisibleModelName(model,enhanced=!!selectionState?.enhanced){const base=keychcBaseModelName(model);return keysuiteChcPresentationAlias(enhanced?keychcEnhancedModelName(base):base);}
 function keychcEnhancedEnabled(){const el=document.getElementById('enhancedMode');return !!(el?el.checked:selectionState?.enhanced)}
 function keychcMixedRawPoint(curve,mix,i){
  const q=Number(curve.flow?.[i]),hf=Number(curve.head_per_stage?.[i]);if(!Number.isFinite(q)||!Number.isFinite(hf))return null;
@@ -1215,7 +1216,7 @@ function exportPDF(requestedFilename){
   </div>
   </div>
  </section>
- <script src="../pdf-optimization.js?v=42508"><\/script>
+ <script src="../pdf-optimization.js?v=42509"><\/script>
  <script>
 const __KEYSUITE_LOCKED_PDF_TITLE__=${JSON.stringify(pdfFileTitle)};
 function __keysuiteLockPdfTitle(){try{document.title=__KEYSUITE_LOCKED_PDF_TITLE__;}catch(_){}}
