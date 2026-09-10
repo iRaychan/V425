@@ -1,17 +1,16 @@
-# KeySuite V4.25.05 FULL CLEAN
+# KeySuite V4.25.06 FULL CLEAN
 
-Full clean release continuing from V4.25.04.
+Full clean release continuing from V4.25.05.
 
-## V4.25.05
-- PDF Page 1 now pairs frequency with its corresponding pump speed, e.g. `50Hz 2900rpm` for a 2-pole 50 Hz curve and the matching RPM for other pole/frequency selections.
-- ES **Hide Duty Point** Page-1-only PDF keeps the motor hidden and shows pump speed only, e.g. `2900rpm`.
-- ES Product display now aligns the model and Recommended Motor controls on the same first row.
-- ES pole (`2 Pole` / `4 Pole`) now sits on the second row with the selection-status badge such as **Manual setting below required head**.
-- Existing V4.25.04 Variable Curve, PDF display-setting and Hide Duty Point behavior is retained.
+## V4.25.06
+- **Hide Duty Point** now removes the duty marker/value from all PDF Page 1 performance plots: Head, Efficiency, Power and NPSH.
+- The performance curves themselves remain visible; only duty-point markers/labels are suppressed.
+- Applies to CHC C6/G2, CHC C4/G1, BFI and ES PDF output.
+- Existing V4.25.05 RPM display, ES Product layout, Variable Curve and PDF Page-1-only Hide Duty Point behavior are retained.
 
 ## Deployment
 Deploy this folder as the complete KeySuite site.
 
-**No new Supabase migration or Edge Function deployment is required for V4.25.05.**
+**No new Supabase migration or Edge Function deployment is required for V4.25.06.**
 
-See `README_UPGRADE_V42505.md` for upgrade-patch details.
+See `README_UPGRADE_V42506.md` for upgrade-patch details.
