@@ -142,6 +142,9 @@ main{max-width:1480px;grid-template-columns:340px minmax(0,1fr);align-items:star
 .setting-title{margin:10px 0 7px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#5b7282}
 .pdf-follow{display:flex!important;align-items:center!important;gap:8px!important;margin:0!important;padding:9px 10px!important;border:1px solid #dce5eb!important;border-radius:7px!important;background:#fff!important;font-size:12px!important;font-weight:800!important}
 .pdf-follow input{width:auto!important;margin:0!important;accent-color:var(--blue)}
+.pdf-independent{margin-top:7px;padding:8px;border:1px solid #dce5eb;border-radius:7px;background:#f8fbfd}
+.pdf-independent[hidden]{display:none!important}
+.pdf-independent .setting-title{margin-top:0}
 
 
 .duty-point-list{display:grid;gap:7px;margin-top:8px}
@@ -187,7 +190,7 @@ body.product-frame main{display:block;max-width:none;padding:8px}body.product-fr
 @media(max-width:600px){.brand-wrap{flex-wrap:wrap}.keysuite-header-actions{width:100%;margin-left:0;justify-content:flex-end}.keysuite-add-action{min-width:92px;padding:9px 11px;font-size:12px}.mobile-export-btn{display:none!important}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:600px){.brand-wrap{flex-wrap:nowrap!important}.keysuite-header-actions{width:auto!important;margin-left:auto!important}}
 </style>
-<script src="../pdf-optimization.js?v=42503"></script>
+<script src="../pdf-optimization.js?v=42504"></script>
 </head>
 <body>
 <header>
@@ -254,11 +257,33 @@ body.product-frame main{display:block;max-width:none;padding:8px}body.product-fr
         <label><input id="showSystem" type="checkbox" checked>System Curve</label>
         <label><input id="showOperating" type="checkbox" checked>Operating Point</label>
         <label><input id="showBep" type="checkbox" checked>BEP</label>
-        <label><input id="showVariableCurve" type="checkbox">Variable Curve · 50 / 45 / 40 / 35 / 30 / 25 Hz</label>
+        <label><input id="showVariableCurve" type="checkbox">Variable Curve</label>
         <label><input id="showOrifice" type="checkbox">After-orifice Curve</label>
       </div>
       <div class="setting-title">PDF Page 1</div>
-      <label class="pdf-follow"><input id="pdfFollowScreen" type="checkbox" checked>Follow Selector Screen Settings</label>
+      <label class="pdf-follow"><input id="pdfFollowScreen" type="checkbox" checked>Follow Display Setting</label>
+      <label class="pdf-follow"><input id="pdfHideDuty" type="checkbox">Hide Duty Point</label>
+      <div id="pdfIndependent" class="pdf-independent" hidden>
+        <div class="setting-title">PDF Curve Setting</div>
+        <div class="parallel-display">
+          <div class="parallel-display-title">Parallel Curves · 2P–6P</div>
+          <div class="parallel-count-list">
+            <label><input id="pdfParallel2" type="checkbox">2P</label>
+            <label><input id="pdfParallel3" type="checkbox">3P</label>
+            <label><input id="pdfParallel4" type="checkbox">4P</label>
+            <label><input id="pdfParallel5" type="checkbox">5P</label>
+            <label><input id="pdfParallel6" type="checkbox">6P</label>
+          </div>
+        </div>
+        <div class="toggle-list">
+          <label><input id="pdfShowDuty" type="checkbox" checked>Duty Points D1–D6</label>
+          <label><input id="pdfShowSystem" type="checkbox" checked>System Curve</label>
+          <label><input id="pdfShowOperating" type="checkbox" checked>Operating Point</label>
+          <label><input id="pdfShowBep" type="checkbox" checked>BEP</label>
+          <label><input id="pdfShowVariableCurve" type="checkbox">Variable Curve</label>
+          <label><input id="pdfShowOrifice" type="checkbox">After-orifice Curve</label>
+        </div>
+      </div>
       <div class="display-save-actions"><button id="saveChcProductDisplay" class="save-display" type="button">Save Display Settings</button><button id="resetChcProductDisplay" class="reset-display" type="button">Reset to Default</button><span id="chcProductDisplaySaveStatus" class="display-save-status"></span></div>
     </div>
   </details>
@@ -1076,8 +1101,10 @@ function exportPDF(requestedFilename){
  const dimValue=v=>(v===null||v===undefined||v==="")?"-":`${formatPdfNumber(Number(v),0)} mm`;
 
  const pdfFollow=(document.getElementById('pdfFollowScreen')||{}).checked!==false;
+ const pdfHideDuty=(document.getElementById('pdfHideDuty')||{}).checked===true;
  const livePdfDisplay=keychcProductDisplaySnapshot();
- if(!pdfFollow)keychcProductSetGraphDisplayControls(KEYCHC_PRODUCT_DISPLAY_DEFAULTS);
+ if(!pdfFollow)keychcProductSetGraphDisplayControls(keysuitePdfGraphSettings());
+ if(pdfHideDuty){const dutyControl=document.getElementById('showDuty');if(dutyControl)dutyControl.checked=false;}
  const sharedFlowAxis=keychcSharedFlowAxis(best);
  const pdfHead=keychcHeadGraph(best,q,h,270);
  // PDF Page 1 layout is locked to the original KeySelector V3.3.3 format.
@@ -1091,7 +1118,7 @@ function exportPDF(requestedFilename){
   keychcParallelMetricGraph(best.powerFit,'power',pumpQ,requiredPower,216,'HP',sharedFlowAxis),
   keychcParallelMetricGraph(best.npshFit,'npsh',pumpQ,requiredNpsh,216,'kW',sharedFlowAxis)
  ];
- if(!pdfFollow)keychcProductSetGraphDisplayControls(livePdfDisplay);
+ if(!pdfFollow||pdfHideDuty)keychcProductSetGraphDisplayControls(livePdfDisplay);
 
  const report=`<!doctype html>
  <html><head><meta charset="utf-8"><title>${pdfFileTitle}</title>
@@ -1099,6 +1126,7 @@ function exportPDF(requestedFilename){
  @page{size:210mm 297mm;margin:8mm}
  *{box-sizing:border-box}
  body{font-family:Arial,sans-serif;color:#203542;margin:0;background:#fff;min-height:281mm}
+ ${pdfHideDuty?'.duty{display:none!important}.tech-page,.dimension-page{display:none!important}.report{break-after:auto!important;page-break-after:auto!important}':''}
  .report,.tech-page,.dimension-page{width:194mm;max-width:194mm;height:281mm;min-height:281mm;margin:0;padding:0;overflow:hidden}.pdf-body-scale{width:102.040816%;transform:scale(.98);transform-origin:top left}.report-body{flex:0 0 auto}.tech-body{position:relative;top:-2.822mm}.tech-body .tds-table{width:100%}.dimension-body{margin-top:17.70mm}
  .report{position:relative;display:flex;flex-direction:column;break-after:page;page-break-after:always}
  .tech-page{break-after:page;page-break-after:always}
@@ -1258,7 +1286,7 @@ function exportPDF(requestedFilename){
   </div>
   </div>
  </section>
- <script src="../pdf-optimization.js?v=42503"><\/script>
+ <script src="../pdf-optimization.js?v=42504"><\/script>
  <script>
 const __KEYSUITE_LOCKED_PDF_TITLE__=${JSON.stringify(pdfFileTitle)};
 function __keysuiteLockPdfTitle(){try{document.title=__KEYSUITE_LOCKED_PDF_TITLE__;window.__KEYSUITE_PDF_FILE_TITLE__=__KEYSUITE_LOCKED_PDF_TITLE__;if(window.frameElement){window.frameElement.name=__KEYSUITE_LOCKED_PDF_TITLE__;window.frameElement.title=__KEYSUITE_LOCKED_PDF_TITLE__;}}catch(_){}}
@@ -1553,6 +1581,18 @@ function keychcProductApplyDisplaySettings(value){
  updateKeyCHCCurveStatus(best);
  if(best)renderSelected();
 }
+
+const KEYSUITE_PDF_DISPLAY_DEFAULTS={pdfParallel2:false,pdfParallel3:false,pdfParallel4:false,pdfParallel5:false,pdfParallel6:false,pdfShowDuty:true,pdfShowSystem:true,pdfShowOperating:true,pdfShowBep:true,pdfShowVariableCurve:false,pdfShowOrifice:false,pdfHideDuty:false};
+function keysuitePdfSnapshot(){const out={};Object.keys(KEYSUITE_PDF_DISPLAY_DEFAULTS).forEach(id=>{const el=document.getElementById(id);out[id]=el?!!el.checked:KEYSUITE_PDF_DISPLAY_DEFAULTS[id]});return out}
+function keysuitePdfApplySettings(value){const s=value&&typeof value==='object'?value:{};Object.keys(KEYSUITE_PDF_DISPLAY_DEFAULTS).forEach(id=>{const el=document.getElementById(id);if(el)el.checked=s[id]===undefined?KEYSUITE_PDF_DISPLAY_DEFAULTS[id]:!!s[id]});keysuiteTogglePdfIndependent()}
+function keysuitePdfGraphSettings(){return {parallel2:!!document.getElementById('pdfParallel2')?.checked,parallel3:!!document.getElementById('pdfParallel3')?.checked,parallel4:!!document.getElementById('pdfParallel4')?.checked,parallel5:!!document.getElementById('pdfParallel5')?.checked,parallel6:!!document.getElementById('pdfParallel6')?.checked,showDuty:(document.getElementById('pdfShowDuty')||{}).checked!==false,showSystem:(document.getElementById('pdfShowSystem')||{}).checked!==false,showOperating:(document.getElementById('pdfShowOperating')||{}).checked!==false,showBep:(document.getElementById('pdfShowBep')||{}).checked!==false,showVariableCurve:!!document.getElementById('pdfShowVariableCurve')?.checked,showOrifice:!!document.getElementById('pdfShowOrifice')?.checked}}
+function keysuiteTogglePdfIndependent(){const box=document.getElementById('pdfIndependent'),follow=(document.getElementById('pdfFollowScreen')||{}).checked!==false;if(box)box.hidden=follow}
+
+const __keysuiteBasePdfSnapshot=keychcProductDisplaySnapshot;
+keychcProductDisplaySnapshot=function(){return Object.assign({},__keysuiteBasePdfSnapshot(),keysuitePdfSnapshot())};
+const __keysuiteBasePdfApply=keychcProductApplyDisplaySettings;
+keychcProductApplyDisplaySettings=function(value){__keysuiteBasePdfApply(value);keysuitePdfApplySettings(value)};
+document.getElementById('pdfFollowScreen')?.addEventListener('change',keysuiteTogglePdfIndependent);keysuiteTogglePdfIndependent();
 function keychcProductDisplayClient(){
  try{
   return (window.parent&&window.parent!==window&&window.parent.KeySuiteAuth?.getClient?.())||
