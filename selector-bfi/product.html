@@ -184,7 +184,7 @@ body.product-frame main{display:block;max-width:none;padding:8px}body.product-fr
 @media(max-width:600px){.brand-wrap{flex-wrap:wrap}.keysuite-header-actions{width:100%;margin-left:0;justify-content:flex-end}.keysuite-add-action{min-width:92px;padding:9px 11px;font-size:12px}.mobile-export-btn{display:none!important}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:600px){.brand-wrap{flex-wrap:nowrap!important}.keysuite-header-actions{width:auto!important;margin-left:auto!important}}
 </style>
-<script src="../pdf-optimization.js?v=42505"></script>
+<script src="../pdf-optimization.js?v=42507"></script>
 </head>
 <body>
 <header>
@@ -528,7 +528,7 @@ function keychcMaxParallelCount(){const c=keychcParallelCounts();return c.length
 // The axis is derived once from the selected pump head-curve maximum flow (expanded only by the highest enabled parallel reference count).
 function keychcSharedFlowAxis(best){const maxCount=keychcMaxParallelCount(),pumpMax=Math.max(0.1,(Number(best?.headFit?.max)||0)*maxCount);return nice(pumpMax,5);}
 function keychcParallelColor(n){return ({1:'#1264a3',2:'#7b61a8',3:'#2f855a',4:'#b7791f',5:'#c05621',6:'#607d8b'})[n]||'#718096';}
-function keychcParallelMetricGraph(fit,kind,dutyQ,dutyValue,chartHeight=216,powerUnit='kW',sharedXAxis=null){
+function keychcParallelMetricGraph(fit,kind,dutyQ,dutyValue,chartHeight=216,powerUnit='kW',sharedXAxis=null,showDutyMarker=true){
  const counts=keychcParallelCounts(),drawCounts=[1,...counts];
  const W=700,H=chartHeight,p={l:72,r:28,t:18,b:46};
  const powerScale=kind==='power'&&String(powerUnit||'kW').toUpperCase()==='HP'?(1/0.746):1;
@@ -556,8 +556,8 @@ function keychcParallelMetricGraph(fit,kind,dutyQ,dutyValue,chartHeight=216,powe
   const qEnd=fit.max*n;let vEnd=fitValue(fit,fit.max);if(kind==='power')vEnd*=n*powerScale;
   if(n>1&&Number.isFinite(vEnd)){const tx=Math.min(W-p.r-3,X(qEnd)-3),ty=Math.max(p.t+10,Math.min(H-p.b-4,Y(Math.max(0,Math.min(axis.max,vEnd)))-4));s+=`<text x="${tx}" y="${ty}" text-anchor="end" font-family="Arial" font-size="9" font-weight="800" fill="${keychcParallelColor(n)}">${n}P</text>`}
  }
- // B4.06.12: normal single-pump auxiliary curve is always present; 1P is not a parallel label/option.
- {
+ // Normal single-pump auxiliary curve is always present; its duty marker can be suppressed for Hide Duty Point PDF output.
+ if(showDutyMarker){
   let yv=kind==='power'?Number(dutyValue)*powerScale:Number(dutyValue);
   if(Number.isFinite(dutyQ)&&Number.isFinite(yv)){
    const px=X(Math.max(0,Math.min(xa.max,dutyQ))),py=Y(Math.max(0,Math.min(axis.max,yv)));
@@ -1054,9 +1054,9 @@ function exportPDF(requestedFilename){
  // and the current live Curve Hz. D1 selection itself remains a single-pump duty.
  const charts=[
   pdfHead.svg,
-  keychcParallelMetricGraph(best.effFit,'efficiency',pumpQ,requiredEff,216,'kW',sharedFlowAxis),
-  keychcParallelMetricGraph(best.powerFit,'power',pumpQ,requiredPower,216,'HP',sharedFlowAxis),
-  keychcParallelMetricGraph(best.npshFit,'npsh',pumpQ,requiredNpsh,216,'kW',sharedFlowAxis)
+  keychcParallelMetricGraph(best.effFit,'efficiency',pumpQ,requiredEff,216,'kW',sharedFlowAxis,!pdfHideDuty),
+  keychcParallelMetricGraph(best.powerFit,'power',pumpQ,requiredPower,216,'HP',sharedFlowAxis,!pdfHideDuty),
+  keychcParallelMetricGraph(best.npshFit,'npsh',pumpQ,requiredNpsh,216,'kW',sharedFlowAxis,!pdfHideDuty)
  ];
  if(!pdfFollow||pdfHideDuty)keychcSetGraphDisplayControls(livePdfDisplay);
 
@@ -1224,7 +1224,7 @@ function exportPDF(requestedFilename){
   </div>
   </div>
  </section>
- <script src="../pdf-optimization.js?v=42505"><\/script>
+ <script src="../pdf-optimization.js?v=42507"><\/script>
  <script>
 const __KEYSUITE_LOCKED_PDF_TITLE__=${JSON.stringify(pdfFileTitle)};
 function __keysuiteLockPdfTitle(){try{document.title=__KEYSUITE_LOCKED_PDF_TITLE__;}catch(_){}}

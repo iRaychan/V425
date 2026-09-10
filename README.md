@@ -1,16 +1,17 @@
-# KeySuite V4.25.06 FULL CLEAN
+# KeySuite V4.25.07 FULL CLEAN
 
-Full clean release continuing from V4.25.05.
+Full clean release continuing from V4.25.06.
 
-## V4.25.06
-- **Hide Duty Point** now removes the duty marker/value from all PDF Page 1 performance plots: Head, Efficiency, Power and NPSH.
-- The performance curves themselves remain visible; only duty-point markers/labels are suppressed.
-- Applies to CHC C6/G2, CHC C4/G1, BFI and ES PDF output.
-- Existing V4.25.05 RPM display, ES Product layout, Variable Curve and PDF Page-1-only Hide Duty Point behavior are retained.
+## V4.25.07
+- **Hide Duty Point** is now enforced explicitly on CHC C6/G2, CHC C4/G1 and BFI auxiliary PDF plots: Efficiency, Power and NPSH duty markers/values are suppressed together with the Head/Flow duty point.
+- The underlying performance curves remain visible.
+- **ES Page 1 layout** now preserves the normal motor-row height when Hide Duty Point hides the duty-dependent motor HP/pole. The remaining RPM stays visible and the curve block no longer moves upward.
+- Hide Duty Point continues to export Page 1 only.
+- Existing V4.25.06 behavior is retained.
 
 ## Deployment
 Deploy this folder as the complete KeySuite site.
 
-**No new Supabase migration or Edge Function deployment is required for V4.25.06.**
+**No new Supabase migration or Edge Function deployment is required for V4.25.07.**
 
-See `README_UPGRADE_V42506.md` for upgrade-patch details.
+See `README_UPGRADE_V42507.md` for upgrade-patch details.
