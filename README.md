@@ -1,19 +1,17 @@
-# KeySuite V4.25.11 FULL CLEAN
+# KeySuite V4.25.12 FULL CLEAN
 
-Built from the verified V4.25.10 Full Clean baseline.
+Built from the verified V4.25.11 Full Clean baseline.
 
-## V4.25.11
+## V4.25.12
 
-- Fixed the remaining duplicate model-suffix path for both BFI and CHC wherever Enhanced/final model presentation is used.
-- `base_model` and final `display_model` are now kept as separate identities in the Brand/Product/PDF presentation layer.
-- Brand/PDF hooks no longer replace a base model substring inside an already-final model name.
-- BFI standard 3-phase names remain exactly one `T`, for example `BFI 10-3T`.
-- BFI Enhanced names remain exactly one `E`, for example `BFI 20-3E`.
-- CHC final names ending in `T` or `E` are preserved exactly and are not duplicated in PDF output.
-- Stale duplicated forms such as `TT`, `EE` or `TE` are canonicalized to the selector's final display model when the PDF identity layer runs.
-- The same final model identity is reused through screen presentation and PDF identity handling instead of rebuilding suffixes downstream.
-- Existing hydraulic, pricing, motor, Enhanced-curve and PDF-layout logic is unchanged.
+- Smoothed the displayed Power curve for CHC C6/G2, CHC C4/G1, BFI and ES.
+- Power plotting now uses shape-preserving cubic (PCHIP-style) interpolation through the existing power points instead of relying on a high-order polynomial for the drawn line.
+- The V4.25.08 non-zero shut-off power estimate at 0 flow is retained and blended into the same smooth curve, removing the visible kink between 0 flow and the first valid power point.
+- The smoothed curve passes through the existing source/calculated power points and avoids spline overshoot or artificial waves.
+- Screen selector, Product Curve and PDF power plots use the same smoothing behavior.
+- Parallel power reference curves inherit the same smooth single-pump curve before total-power scaling.
+- Original hydraulic data, calculated duty values, motor sizing, selection logic and pricing are unchanged. This is a display/PDF curve-rendering improvement only.
 
-**No new Supabase migration or Edge Function deployment is required for V4.25.11.**
+**No new Supabase migration or Edge Function deployment is required for V4.25.12.**
 
-See `README_UPGRADE_V42511.md` for upgrade-patch details.
+See `README_UPGRADE_V42512.md` for upgrade-patch details.

@@ -469,28 +469,37 @@ function graph(fit,axis,ylabel,dq,dv,labelOrder,chartTitle,metricLabel='',chartH
 
 
 
-// V4.25.08: display-only shut-off power extension. Preserve the existing fitted power curve
-// from its first usable flow onward, and extend that local trend smoothly back to Q=0.
-// Do not force the Q=0 power to 0 kW/HP and do not change selection or motor sizing data.
-function keysuitePowerFitValue(fit,x){
- if(!fit||!Number.isFinite(Number(x)))return NaN;
- try{if(typeof fitValue==='function')return fitValue(fit,Number(x));}catch(_){ }
- const c=fit.c||[];return c.reduce((s,a,i)=>s+Number(a)*Number(x)**i,0);
-}
-function keysuitePowerExtension(fit){
- const xs=[];(fit&&fit.pts||[]).forEach(p=>{const x=Number(p&&p.x);if(Number.isFinite(x)&&x>1e-9&&!xs.some(v=>Math.abs(v-x)<1e-9))xs.push(x)});xs.sort((a,b)=>a-b);
- if(xs.length<2)return null;
- const x1=xs[0],x2=xs[1],y1=keysuitePowerFitValue(fit,x1),y2=keysuitePowerFitValue(fit,x2);
- if(!(x1>0&&x2>x1&&Number.isFinite(y1)&&y1>0&&Number.isFinite(y2)))return null;
+// V4.25.12: display-only Power-curve smoothing. Build a shape-preserving cubic
+// interpolation through the existing positive-flow power points plus the V4.25.08
+// non-zero shut-off estimate at Q=0. This changes drawing only; selection, duty
+// calculations, motor sizing, and the stored/calculated source points stay unchanged.
+function keysuitePowerSmoothFit(fit){
+ const grouped=[];
+ (fit&&fit.pts||[]).forEach(p=>{
+  const x=Number(p&&p.x),y=Number(p&&p.y);if(!(Number.isFinite(x)&&x>1e-9&&Number.isFinite(y)&&y>=0))return;
+  const last=grouped[grouped.length-1];
+  if(last&&Math.abs(last.x-x)<1e-9){last.sum+=y;last.count++;last.y=last.sum/last.count}else grouped.push({x,y,sum:y,count:1});
+ });
+ grouped.sort((a,b)=>a.x-b.x);if(grouped.length<2)return null;
+ const x1=grouped[0].x,x2=grouped[1].x,y1=grouped[0].y,y2=grouped[1].y;if(!(x2>x1&&y1>0))return null;
  const slope=(y2-y1)/(x2-x1);let y0=y1-slope*x1;
- const minY=Math.max(y1*.15,1e-6),maxY=Math.max(y1*1.75,minY);
- if(!Number.isFinite(y0))y0=y1;
- y0=Math.max(minY,Math.min(maxY,y0));
- return {joinX:x1,joinY:y1,y0};
+ const minY=Math.max(y1*.15,1e-6),maxY=Math.max(y1*1.75,minY);if(!Number.isFinite(y0))y0=y1;y0=Math.max(minY,Math.min(maxY,y0));
+ const pts=[{x:0,y:y0},...grouped.map(p=>({x:p.x,y:p.y}))],n=pts.length,h=[],delta=[];
+ for(let i=0;i<n-1;i++){h[i]=pts[i+1].x-pts[i].x;if(!(h[i]>0))return null;delta[i]=(pts[i+1].y-pts[i].y)/h[i]}
+ const d=new Array(n).fill(0);
+ if(n===2){d[0]=d[1]=delta[0]}else{
+  for(let i=1;i<n-1;i++){const a=delta[i-1],b=delta[i];if(a===0||b===0||Math.sign(a)!==Math.sign(b))d[i]=0;else{const w1=2*h[i]+h[i-1],w2=h[i]+2*h[i-1];d[i]=(w1+w2)/(w1/a+w2/b)}}
+  const edge=(h0,h1,s0,s1)=>{let m=((2*h0+h1)*s0-h0*s1)/(h0+h1);if(Math.sign(m)!==Math.sign(s0))m=0;else if(Math.sign(s0)!==Math.sign(s1)&&Math.abs(m)>Math.abs(3*s0))m=3*s0;return Number.isFinite(m)?m:0};
+  d[0]=edge(h[0],h[1],delta[0],delta[1]);d[n-1]=edge(h[n-2],h[n-3],delta[n-2],delta[n-3]);
+ }
+ return {pts,d,min:0,max:pts[n-1].x,y0};
 }
-function keysuitePowerGraphValue(fit,x,ext){
- x=Number(x);if(ext&&Number.isFinite(x)&&x>=0&&x<ext.joinX)return ext.y0+(ext.joinY-ext.y0)*(x/ext.joinX);
- return keysuitePowerFitValue(fit,x);
+function keysuitePowerSmoothValue(smooth,x){
+ x=Number(x);if(!smooth||!Number.isFinite(x))return NaN;const pts=smooth.pts||[],d=smooth.d||[];if(!pts.length||x<pts[0].x-1e-9||x>pts[pts.length-1].x+1e-9)return NaN;
+ if(x<=pts[0].x+1e-9)return pts[0].y;if(x>=pts[pts.length-1].x-1e-9)return pts[pts.length-1].y;
+ let lo=0,hi=pts.length-1;while(hi-lo>1){const mid=(lo+hi)>>1;if(pts[mid].x<=x)lo=mid;else hi=mid}
+ const a=pts[lo],b=pts[hi],hh=b.x-a.x;if(!(hh>0))return a.y;const t=(x-a.x)/hh,t2=t*t,t3=t2*t;
+ return (2*t3-3*t2+1)*a.y+(t3-2*t2+t)*hh*d[lo]+(-2*t3+3*t2)*b.y+(t3-t2)*hh*d[hi];
 }
 
 function keychcParallelCounts(){
@@ -507,12 +516,12 @@ function keychcParallelMetricGraph(fit,kind,dutyQ,dutyValue,chartHeight=216,powe
  const counts=keychcParallelCounts(),drawCounts=[1,...counts];
  const W=700,H=chartHeight,p={l:72,r:28,t:18,b:46};
  const powerScale=kind==='power'&&String(powerUnit||'kW').toUpperCase()==='HP'?(1/0.746):1;
- const powerExt=kind==='power'?keysuitePowerExtension(fit):null;
+ const powerSmooth=kind==='power'?keysuitePowerSmoothFit(fit):null;
  const maxCount=Math.max(1,...counts);
  const xMax=Math.max(0.1,(Number(fit.max)||0)*maxCount);
  const xa=sharedXAxis||nice(xMax,5);
  let baseMax=Math.max(...fit.pts.map(pt=>(Number(pt.y)||0)*powerScale),(Number(dutyValue)||0)*powerScale);
- if(kind==='power'&&powerExt)baseMax=Math.max(baseMax,powerExt.y0*powerScale);
+ if(kind==='power'&&powerSmooth)baseMax=Math.max(baseMax,...powerSmooth.pts.map(pt=>pt.y*powerScale));
  if(kind==='power')baseMax*=maxCount;
  const axis=kind==='efficiency'?effAxis(baseMax):nice(Math.max(0.1,baseMax),5);
  const plotW=W-p.l-p.r,plotH=H-p.t-p.b;
@@ -523,15 +532,15 @@ function keychcParallelMetricGraph(fit,kind,dutyQ,dutyValue,chartHeight=216,powe
  for(const n of drawCounts){
   const pts=[];
   for(let i=0;i<=180;i++){
-   const curveMin=(kind==='power'&&powerExt)?0:fit.min;
+   const curveMin=(kind==='power'&&powerSmooth)?0:fit.min;
    const qEach=curveMin+(fit.max-curveMin)*i/180;
-   let v=kind==='power'?keysuitePowerGraphValue(fit,qEach,powerExt):peval(fit.c,qEach);if(!Number.isFinite(v))continue;
+   let v=(kind==='power'&&powerSmooth)?keysuitePowerSmoothValue(powerSmooth,qEach):peval(fit.c,qEach);if(!Number.isFinite(v))continue;
    if(kind==='power')v*=n*powerScale;
    v=Math.max(0,Math.min(axis.max,v));
    pts.push(`${X(qEach*n)},${Y(v)}`);
   }
   if(pts.length>1)s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${keychcParallelColor(n)}" stroke-width="${n===1?3:2}" stroke-linecap="round" stroke-linejoin="round" ${n===1?'':`stroke-dasharray="${4+n} ${3+n%2}"`}/>`;
-  const qEnd=fit.max*n;let vEnd=peval(fit.c,fit.max);if(kind==='power')vEnd*=n*powerScale;
+  const qEnd=fit.max*n;let vEnd=(kind==='power'&&powerSmooth)?keysuitePowerSmoothValue(powerSmooth,fit.max):peval(fit.c,fit.max);if(kind==='power')vEnd*=n*powerScale;
   if(n>1&&Number.isFinite(vEnd)){const tx=Math.min(W-p.r-3,X(qEnd)-3),ty=Math.max(p.t+10,Math.min(H-p.b-4,Y(Math.max(0,Math.min(axis.max,vEnd)))-4));s+=`<text x="${tx}" y="${ty}" text-anchor="end" font-family="Arial" font-size="9" font-weight="800" fill="${keychcParallelColor(n)}">${n}P</text>`}
  }
  // Normal single-pump auxiliary curve is always present; its duty marker can be suppressed for Hide Duty Point PDF output.
