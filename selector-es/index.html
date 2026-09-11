@@ -268,7 +268,7 @@ function nice(v,targetIntervals){targetIntervals=targetIntervals||5;var value=Ma
 function fmtTick(v){var a=Math.abs(v);if(a>=1000)return String(Math.round(v));if(a>=10)return Number(v.toFixed(1)).toString();return Number(v.toFixed(2)).toString()}
 function effAxis(v){return v<50?{step:10,max:50}:v<=80?{step:20,max:80}:{step:20,max:100}}
 
-// V4.25.12: display-only ES Power-curve smoothing. Use a shape-preserving cubic
+// V4.25.13: display-only ES Power-curve smoothing. Use a shape-preserving cubic
 // interpolation through the existing shaft-power points plus the non-zero Q=0
 // shut-off estimate. Hydraulic selection and motor-sizing calculations are untouched.
 function esPowerSmoothFit(fit){
